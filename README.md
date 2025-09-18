@@ -2,6 +2,8 @@
 
 A retro-style tennis game built with HTML5 Canvas and JavaScript, featuring single-player gameplay against an AI opponent.
 
+[日本語版 README はこちら](README_JP.md)
+
 ## 🎮 Play Now
 
 Play the game directly in your browser: [https://hi3369.github.io/tennis-game/](https://hi3369.github.io/tennis-game/)
@@ -51,7 +53,8 @@ The AI opponent features:
 ```
 tennis-game/
 ├── index.html    # Complete game in a single HTML file
-└── README.md     # Project documentation
+├── README.md     # Project documentation (English)
+└── README_JP.md  # Project documentation (Japanese)
 ```
 
 ## 🚀 Local Development
