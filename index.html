@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>クラシックテニスゲーム</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+        }
+        
+        #gameContainer {
+            text-align: center;
+        }
+        
+        #gameCanvas {
+            border: 2px solid #fff;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        #score {
+            color: #fff;
+            font-size: 24px;
+            margin-bottom: 20px;
+            letter-spacing: 20px;
+        }
+        
+        #instructions {
+            color: #fff;
+            margin-top: 20px;
+            line-height: 1.5;
+        }
+        
+        #startButton {
+            background: #fff;
+            border: none;
+            padding: 10px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-family: inherit;
+        }
+        
+        #startButton:hover {
+            background: #ccc;
+        }
+        
+        #difficulty {
+            background: #fff;
+            border: none;
+            padding: 8px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            font-family: inherit;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="score">0 - 0</div>
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <div id="instructions">
+            <p>プレイヤー: ↑ (上) / ↓ (下)</p>
+            <p>コンピューター: AI操作</p>
+            <select id="difficulty">
+                <option value="easy">かんたん</option>
+                <option value="medium" selected>ふつう</option>
+                <option value="hard">むずかしい</option>
+            </select>
+            <button id="startButton">ゲーム開始</button>
+        </div>
+    </div>
+    
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('score');
+        const startButton = document.getElementById('startButton');
+        const difficultySelect = document.getElementById('difficulty');
+        
+        const game = {
+            width: canvas.width,
+            height: canvas.height,
+            ballSpeed: 5,
+            paddleSpeed: 8,
+            running: false,
+            aiSpeed: 5,
+            aiReactionDistance: 150,
+            aiErrorRate: 0.1
+        };
+        
+        const player = {
+            x: game.width - 30,
+            y: game.height / 2 - 50,
+            width: 10,
+            height: 100,
+            score: 0,
+            up: false,
+            down: false
+        };
+        
+        const ai = {
+            x: 20,
+            y: game.height / 2 - 50,
+            width: 10,
+            height: 100,
+            score: 0,
+            targetY: game.height / 2
+        };
+        
+        const ball = {
+            x: game.width / 2,
+            y: game.height / 2,
+            radius: 8,
+            speedX: game.ballSpeed,
+            speedY: game.ballSpeed * 0.5,
+            trail: []
+        };
+        
+        function drawPaddle(player) {
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+        }
+        
+        function drawBall() {
+            ball.trail.forEach((pos, index) => {
+                ctx.fillStyle = `rgba(255, 255, 255, ${index * 0.1})`;
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, ball.radius * (index * 0.1 + 0.5), 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function drawNet() {
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([10, 10]);
+            ctx.beginPath();
+            ctx.moveTo(game.width / 2, 0);
+            ctx.lineTo(game.width / 2, game.height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        
+        function updateAI() {
+            if (ball.speedX < 0 && ball.x < game.width - game.aiReactionDistance) {
+                const predictedY = ball.y + (ball.speedY / ball.speedX) * (ai.x - ball.x);
+                const error = (Math.random() - 0.5) * game.aiErrorRate * ai.height;
+                ai.targetY = predictedY + error - ai.height / 2;
+            } else {
+                ai.targetY = game.height / 2 - ai.height / 2;
+            }
+            
+            const diff = ai.targetY - ai.y;
+            const moveSpeed = Math.min(game.aiSpeed, Math.abs(diff));
+            
+            if (diff > 5) {
+                ai.y += moveSpeed;
+            } else if (diff < -5) {
+                ai.y -= moveSpeed;
+            }
+            
+            ai.y = Math.max(0, Math.min(game.height - ai.height, ai.y));
+        }
+        
+        function updatePlayer() {
+            if (player.up && player.y > 0) {
+                player.y -= game.paddleSpeed;
+            }
+            if (player.down && player.y < game.height - player.height) {
+                player.y += game.paddleSpeed;
+            }
+        }
+        
+        function updateBall() {
+            ball.trail.push({ x: ball.x, y: ball.y });
+            if (ball.trail.length > 5) {
+                ball.trail.shift();
+            }
+            
+            ball.x += ball.speedX;
+            ball.y += ball.speedY;
+            
+            if (ball.y - ball.radius <= 0 || ball.y + ball.radius >= game.height) {
+                ball.speedY = -ball.speedY;
+            }
+            
+            if (ball.x - ball.radius <= ai.x + ai.width &&
+                ball.x - ball.radius >= ai.x &&
+                ball.y >= ai.y &&
+                ball.y <= ai.y + ai.height &&
+                ball.speedX < 0) {
+                ball.speedX = -ball.speedX * 1.05;
+                const relativeY = (ball.y - (ai.y + ai.height / 2)) / (ai.height / 2);
+                ball.speedY = relativeY * game.ballSpeed;
+            }
+            
+            if (ball.x + ball.radius >= player.x &&
+                ball.x + ball.radius <= player.x + player.width &&
+                ball.y >= player.y &&
+                ball.y <= player.y + player.height &&
+                ball.speedX > 0) {
+                ball.speedX = -ball.speedX * 1.05;
+                const relativeY = (ball.y - (player.y + player.height / 2)) / (player.height / 2);
+                ball.speedY = relativeY * game.ballSpeed;
+            }
+            
+            if (ball.x < 0) {
+                player.score++;
+                resetBall();
+                updateScore();
+            }
+            
+            if (ball.x > game.width) {
+                ai.score++;
+                resetBall();
+                updateScore();
+            }
+        }
+        
+        function resetBall() {
+            ball.x = game.width / 2;
+            ball.y = game.height / 2;
+            ball.speedX = (Math.random() > 0.5 ? 1 : -1) * game.ballSpeed;
+            ball.speedY = (Math.random() - 0.5) * game.ballSpeed;
+            ball.trail = [];
+        }
+        
+        function updateScore() {
+            scoreDisplay.textContent = `${ai.score} - ${player.score}`;
+            
+            if (ai.score >= 11 || player.score >= 11) {
+                game.running = false;
+                const winner = player.score >= 11 ? "プレイヤー" : "コンピューター";
+                setTimeout(() => {
+                    alert(`${winner}の勝利！`);
+                    ai.score = 0;
+                    player.score = 0;
+                    updateScore();
+                    startButton.style.display = 'inline-block';
+                    difficultySelect.style.display = 'inline-block';
+                }, 100);
+            }
+        }
+        
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+            ctx.fillRect(0, 0, game.width, game.height);
+            
+            drawNet();
+            drawPaddle(ai);
+            drawPaddle(player);
+            drawBall();
+        }
+        
+        function gameLoop() {
+            if (!game.running) return;
+            
+            updatePlayer();
+            updateAI();
+            updateBall();
+            draw();
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp':
+                    e.preventDefault();
+                    player.up = true;
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    player.down = true;
+                    break;
+            }
+        });
+        
+        document.addEventListener('keyup', (e) => {
+            switch(e.key) {
+                case 'ArrowUp':
+                    player.up = false;
+                    break;
+                case 'ArrowDown':
+                    player.down = false;
+                    break;
+            }
+        });
+        
+        function setDifficulty() {
+            const difficulty = difficultySelect.value;
+            switch(difficulty) {
+                case 'easy':
+                    game.aiSpeed = 3;
+                    game.aiReactionDistance = 100;
+                    game.aiErrorRate = 0.3;
+                    break;
+                case 'medium':
+                    game.aiSpeed = 5;
+                    game.aiReactionDistance = 150;
+                    game.aiErrorRate = 0.15;
+                    break;
+                case 'hard':
+                    game.aiSpeed = 7;
+                    game.aiReactionDistance = 250;
+                    game.aiErrorRate = 0.05;
+                    break;
+            }
+        }
+        
+        startButton.addEventListener('click', () => {
+            setDifficulty();
+            game.running = true;
+            startButton.style.display = 'none';
+            difficultySelect.style.display = 'none';
+            resetBall();
+            gameLoop();
+        });
+        
+        difficultySelect.addEventListener('change', setDifficulty);
+        
+        draw();
+    </script>
+</body>
+</html>
