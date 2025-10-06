@@ -12,6 +12,8 @@ __pycache__/
 pic/
 pic_resized/
 audio/
+*.mp4
+temp_video_files/
 
 # Virtual environment
 venv/
