@@ -2,6 +2,8 @@
 
 HTML5 CanvasとJavaScriptで構築された、AI対戦相手と対戦できるレトロスタイルのテニスゲームです。
 
+[English README is here](README.md)
+
 ## 🎮 今すぐプレイ
 
 ブラウザで直接プレイできます: [https://hi3369.github.io/tennis-game/](https://hi3369.github.io/tennis-game/)
