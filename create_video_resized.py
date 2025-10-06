@@ -1,32 +1,43 @@
 #!/usr/bin/env python3
 """
-Create video from screenshots and audio narration using ffmpeg
+動画生成スクリプト
+
+スクリーンショットと音声ファイルを組み合わせて、
+テニスゲームの解説動画を自動生成します。
+
+機能:
+- 各シーンごとの動画セグメント作成
+- 音声同期での静止画表示
+- 高品質H.264エンコーディング
+- 全セグメントの結合
 """
 
-import subprocess
-import os
+import subprocess  # ffmpegコマンド実行用
+import os          # ファイル操作とディレクトリ管理用
 
-# Video settings
-output_video = "tennis_game_tutorial.mp4"
-resolution = "1920x1080"
-fps = 30
-video_codec = "libx264"
-audio_codec = "aac"
+# 動画出力設定
+output_video = "tennis_game_tutorial.mp4"  # 最終出力ファイル名
+resolution = "1920x1080"                    # フルHD解像度
+fps = 30                                    # フレームレート（秒間30フレーム）
+video_codec = "libx264"                     # H.264ビデオコーデック
+audio_codec = "aac"                         # AACオーディオコーデック
 
-# Define scenes with their durations (estimated based on narration length)
+# シーン定義：各セクションの表示時間設定
+# ナレーション音声の長さに基づいて推定された表示時間
+# duration: メイン表示時間（秒）, gap: シーン間の無音間隔（秒）
 scenes = [
-    {'id': 'scene01', 'duration': 12.0, 'gap': 1.0},
-    {'id': 'scene02', 'duration': 15.0, 'gap': 1.0},
-    {'id': 'scene03', 'duration': 10.0, 'gap': 1.0},
-    {'id': 'scene04', 'duration': 12.0, 'gap': 1.0},
-    {'id': 'scene05', 'duration': 18.0, 'gap': 1.0},
-    {'id': 'scene06', 'duration': 15.0, 'gap': 1.0},
-    {'id': 'scene07', 'duration': 20.0, 'gap': 1.0},
-    {'id': 'scene08', 'duration': 25.0, 'gap': 1.0},
-    {'id': 'scene09', 'duration': 15.0, 'gap': 1.0},
-    {'id': 'scene10', 'duration': 12.0, 'gap': 1.0},
-    {'id': 'scene11', 'duration': 12.0, 'gap': 1.0},
-    {'id': 'scene12', 'duration': 18.0, 'gap': 0.0},  # No gap after last scene
+    {'id': 'scene01', 'duration': 12.0, 'gap': 1.0},  # HTML構造とメタデータ
+    {'id': 'scene02', 'duration': 15.0, 'gap': 1.0},  # CSSスタイル
+    {'id': 'scene03', 'duration': 10.0, 'gap': 1.0},  # HTML本体
+    {'id': 'scene04', 'duration': 12.0, 'gap': 1.0},  # JavaScript初期設定
+    {'id': 'scene05', 'duration': 18.0, 'gap': 1.0},  # ゲームオブジェクト
+    {'id': 'scene06', 'duration': 15.0, 'gap': 1.0},  # 描画関数
+    {'id': 'scene07', 'duration': 20.0, 'gap': 1.0},  # AI制御システム
+    {'id': 'scene08', 'duration': 25.0, 'gap': 1.0},  # プレイヤー制御とボール物理
+    {'id': 'scene09', 'duration': 15.0, 'gap': 1.0},  # スコア管理
+    {'id': 'scene10', 'duration': 12.0, 'gap': 1.0},  # メインループと描画
+    {'id': 'scene11', 'duration': 12.0, 'gap': 1.0},  # キーボード入力処理
+    {'id': 'scene12', 'duration': 18.0, 'gap': 0.0},  # 難易度設定（最後なので無音なし）
 ]
 
 # Scene name mapping
